@@ -196,6 +196,7 @@ const messagesFromReactAppListener = (
       }
     });
   }
+  return 'foo';
 };
 
 /** Fired when the extension is first installed,
