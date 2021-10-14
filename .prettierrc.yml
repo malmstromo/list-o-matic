@@ -1,0 +1,3 @@
+#common for client and server
+singleQuote: true
+trailingComma: es5
