@@ -8,7 +8,7 @@ const generateRandomString = () => {
   return Array.from(array, dec2hex).join('');
 };
 
-const verifier = generateRandomString();
+const randomStringVerifier = generateRandomString();
 
 const sha256 = (plain: any) => {
   // returns promise ArrayBuffer
@@ -33,6 +33,7 @@ const challenge_from_verifier = async (v: any) => {
   return base64encoded;
 };
 
-const challenge = async () => await challenge_from_verifier(verifier);
+const challenge = async () =>
+  await challenge_from_verifier(randomStringVerifier);
 
-export { challenge, verifier };
+export { challenge, randomStringVerifier };

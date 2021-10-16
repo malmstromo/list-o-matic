@@ -3,13 +3,13 @@ import { useHistory } from 'react-router-dom';
 import { ChromeMessage, Sender } from '../types';
 import { getCurrentTabUId, getCurrentTabUrl } from '../chrome/utils';
 import { ActionType } from '../types';
-import { useAppSelector, useAppDispatch } from '../redux/hooks';
 
 export const Home = () => {
   const [url, setUrl] = useState<string>('');
   const [playlistName, setPlaylistName] = useState<string>('testplaylist');
   const [responseFromContent, setResponseFromContent] = useState<string>('');
   const [signedIn, setSignedIn] = useState<boolean>(false);
+  const [token, setToken] = useState<boolean>(false);
 
   const { push } = useHistory();
 
@@ -32,7 +32,13 @@ export const Home = () => {
     );
   }, []);
 
-  const sendTestMessage = () => {
+  useEffect(() => {
+    chrome.storage.local.get(['token'], function (result) {
+      console.log('Value currently is ' + result.key);
+    });
+  }, [token]);
+
+  const login = () => {
     console.log("send messate'1'11");
     const message: ChromeMessage = {
       from: Sender.React,
@@ -41,6 +47,7 @@ export const Home = () => {
     };
     chrome.runtime.sendMessage(message, function (response) {
       console.log('response is: ', response.message);
+      setToken(true);
       setSignedIn(response.message);
     });
 
@@ -54,27 +61,12 @@ export const Home = () => {
     // });
   };
 
-  const sendRemoveMessage = () => {
+  const getSong = () => {
     console.log('sget song');
     const message: ChromeMessage = {
       from: Sender.React,
-      message: 'delete logo',
+      message: ActionType.GET_SONG,
       data: '',
-    };
-
-    chrome.runtime.sendMessage(
-      { message: 'performAction' },
-      function (response) {
-        console.log('response is: ', response);
-      }
-    );
-  };
-
-  const getPlaylist = () => {
-    const message: ChromeMessage = {
-      from: Sender.React,
-      message: 'getPlaylist',
-      data: playlistName,
     };
 
     chrome.runtime.sendMessage(message, function (response) {
@@ -82,12 +74,16 @@ export const Home = () => {
     });
   };
 
+  const getPlaylist = () => {
+    chrome.storage.local.get(['token'], function (result) {
+      console.log('Value currently is ' + result.key);
+    });
+  };
+
   const handleChange = (e: any) => {
     console.log(e);
     setPlaylistName(e.target.value);
   };
-
-  const token = useAppSelector((state) => state.tokenReducer.value);
 
   return (
     <div className="App">
@@ -97,8 +93,8 @@ export const Home = () => {
         <p>{url}</p>
         <p>{signedIn ? 'signed in!' : 'not signed in'}</p>
         <p>{token}</p>
-        <button onClick={sendTestMessage}>Log in</button>
-        <button onClick={sendRemoveMessage}>Get song</button>
+        <button onClick={login}>Log in</button>
+        <button onClick={getSong}>Get song</button>
         <input value={playlistName} onChange={handleChange} type="text"></input>
         <button onClick={getPlaylist}>Get playlist</button>
 

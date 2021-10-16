@@ -1,88 +1,19 @@
 import { ChromeMessage, ActionType, Sender } from '../types';
 import { postData, getData } from '../apiUtils';
-import { getSong, addToPlaylist, getToken, init } from '../data_source/spotify';
-import { challenge, verifier } from '../cryptoUtils';
+import {
+  getSong,
+  addToPlaylist,
+  getToken,
+  getPkceUrl,
+  init,
+} from '../data_source/spotify';
+import { challenge } from '../cryptoUtils';
+import { authData } from './auth';
 export {};
 
 type MessageResponse = (response?: any) => void;
-const CLIENT_ID = encodeURIComponent('0efe050f6fe046ccb90f4b8464c1edb1');
-const RESPONSE_TYPE = encodeURIComponent('code');
-const REDIRECT_URI = encodeURIComponent(
-  'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/'
-);
-const PLAYLIST_PRIVATE_SCOPE = encodeURIComponent('playlist-modify-private');
-const PLAYLIST_PUBLIC_SCOPE = encodeURIComponent('playlist-modify-public');
-const SHOW_DIALOG = encodeURIComponent('true');
-const CODE_CHALLENGE_METHOD = encodeURIComponent('S256');
-const GRANT_TYPE = encodeURIComponent('authorization_code');
-let CODE_CHALLENGE: string;
-const CODE_VERIFIER = verifier;
-let STATE = '';
-const ACCESS_TOKEN = '';
-const CODE = '';
-const BASE_ADDRESS = 'https://api.spotify.com/v1/search';
-const API_TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
-const SEARCH_QUERY = 'q';
-const SEARCH_TYPE = 'type';
-let song;
 
-const user_signed_in = false;
-
-const create_pkce_endpoint = () => {
-  STATE = encodeURIComponent(
-    'meet' + Math.random().toString(36).substring(2, 15)
-  );
-
-  const data = {
-    client_id: CLIENT_ID,
-    response_type: RESPONSE_TYPE,
-    redirect_uri: 'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/',
-    state: STATE,
-    scope: PLAYLIST_PUBLIC_SCOPE,
-    show_dialog: SHOW_DIALOG,
-    code_challenge_method: CODE_CHALLENGE_METHOD,
-    code_challenge: CODE_CHALLENGE,
-  };
-
-  const searchParams = new URLSearchParams(data);
-
-  const url = `https://accounts.spotify.com/authorize?`.concat(
-    searchParams.toString()
-  );
-
-  console.log(url);
-
-  return url;
-};
-
-const create_token_endpoint = () => {
-  STATE = encodeURIComponent(
-    'meet' + Math.random().toString(36).substring(2, 15)
-  );
-
-  const pkce_url = `https://accounts.spotify.com/authorize
-?client_id=${CLIENT_ID}
-&grant_type=${GRANT_TYPE}
-&redirect_uri=${REDIRECT_URI}
-&code_verifier=${CODE_VERIFIER}
-&code=${CODE}
-`;
-
-  console.log(pkce_url);
-
-  return pkce_url;
-};
-
-const create_search = () => {
-  const search = encodeURIComponent('artist:kemmuru track:oon 2');
-  const type = encodeURIComponent('track');
-  const search_url = `${BASE_ADDRESS}?${SEARCH_QUERY}=${search}&${SEARCH_TYPE}=${type}&limit=1
-`;
-
-  console.log(search_url);
-
-  return search_url;
-};
+let user_signed_in = false;
 
 const validateSender = (
   message: ChromeMessage,
@@ -105,19 +36,24 @@ const messagesFromReactAppListener = (
       console.log('User is already signed in.');
     } else {
       challenge().then((challenge) => {
-        CODE_CHALLENGE = challenge;
-
-        const endpoint = create_pkce_endpoint();
-        console.log(endpoint);
+        authData.codeChallenge = challenge;
+        const authUrl = getPkceUrl();
+        console.log(authUrl);
 
         chrome.identity.launchWebAuthFlow(
           {
-            url: endpoint,
+            url: authUrl,
             interactive: true,
           },
           (redirect_url) => {
-            const response = init(redirect_url, STATE);
+            const response = init(redirect_url);
+
             console.log(response);
+            if (response.content === authData.state) {
+              user_signed_in = true;
+              const token = getToken();
+              console.log(token);
+            }
             sendResponse(response);
           }
         );
@@ -126,9 +62,12 @@ const messagesFromReactAppListener = (
 
     return true;
   } else if (request.message === ActionType.GET_LOGIN_STATE) {
-    sendResponse({ message: user_signed_in });
+    sendResponse({ message: authData.token });
   } else if (request.message === ActionType.GET_SONG) {
-    try {
+    console.log(authData.token);
+    sendResponse({ message: authData.token });
+  }
+  /* try {
       const foo = create_search();
       console.log(foo);
       console.log(ACCESS_TOKEN);
@@ -158,7 +97,8 @@ const messagesFromReactAppListener = (
         });
       }
     });
-  }
+  } */
+
   return 'foo';
 };
 

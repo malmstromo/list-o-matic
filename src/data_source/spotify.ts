@@ -1,87 +1,51 @@
-import { challenge, verifier } from '../cryptoUtils';
-import { ChromeMessage, ActionType, Sender, MessageResponse } from '../types';
-import { postData, getData } from '../apiUtils';
-import { useAppSelector, useAppDispatch } from '../redux/hooks';
+import { MessageResponse } from '../types';
+import { postData, RequestParams, buildParams } from '../apiUtils';
+import { authData } from 'src/chrome/auth';
 
-import { remove, add } from '../redux/tokenSlice';
-
-const CLIENT_ID = encodeURIComponent('0efe050f6fe046ccb90f4b8464c1edb1');
-const RESPONSE_TYPE = encodeURIComponent('code');
-const REDIRECT_URI = encodeURIComponent(
-  'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/'
-);
-const PLAYLIST_PRIVATE_SCOPE = encodeURIComponent('playlist-modify-private');
-const PLAYLIST_PUBLIC_SCOPE = encodeURIComponent('playlist-modify-public');
-const SHOW_DIALOG = encodeURIComponent('true');
-const CODE_CHALLENGE_METHOD = encodeURIComponent('S256');
-const GRANT_TYPE = encodeURIComponent('authorization_code');
-let CODE_CHALLENGE: string;
-const CODE_VERIFIER = verifier;
-let STATE = '';
-let ACCESS_TOKEN = '';
-let CODE = '';
+const RESPONSE_TYPE = 'code';
+const REDIRECT_URI =
+  'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/';
+const PLAYLIST_PRIVATE_SCOPE = 'playlist-modify-private';
+const PLAYLIST_PUBLIC_SCOPE = 'playlist-modify-public';
+const SHOW_DIALOG = 'true';
+const GRANT_TYPE = 'authorization_code';
 const BASE_ADDRESS = 'https://api.spotify.com/v1/search';
+const AUTH_URL = 'https://accounts.spotify.com/authorize?';
 const API_TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
-const SEARCH_QUERY = 'q';
-const SEARCH_TYPE = 'type';
-let song;
 
-const launchFlow = () => {
-  const endpoint = create_pkce_endpoint();
-  chrome.identity.launchWebAuthFlow(
-    {
-      url: endpoint,
-      interactive: true,
-    },
-    () => {}
-  );
-};
+interface TokenRequestParams extends RequestParams {
+  grant_type: string;
+  code: string;
+  redirect_uri: string;
+  code_verifier: string;
+}
+interface AuthRequestParams extends RequestParams {
+  redirect_uri: string;
+  response_type: string;
+  state: string;
+  scope: string[];
+  show_dialog: string;
+  code_challenge_method: string;
+  code_challenge: string;
+}
 
-const init = (redirect_url: any, steaet1: string): MessageResponse => {
-  console.log('init');
+const init = (redirect_url: any): MessageResponse => {
   if (redirect_url) {
-    console.log('redirect urk');
-    console.log(redirect_url);
     if (chrome.runtime.lastError) {
       return { content: '123' };
     } else {
+      //parse this in a better way
       if (redirect_url.includes('callback?error=access_denied')) {
         return { content: '456' };
       } else {
-        CODE = redirect_url.substring(
+        authData.code = redirect_url.substring(
           redirect_url.indexOf('code=') + 5,
           redirect_url.indexOf('state=') - 1
         );
         const state = redirect_url.substring(
           redirect_url.indexOf('state=') + 6
         );
-        console.log('code is ', CODE);
-
-        if (state === steaet1) {
-          const formData = new URLSearchParams();
-          formData.append('client_id', CLIENT_ID);
-          formData.append('grant_type', 'authorization_code');
-          formData.append('code', CODE);
-          formData.append(
-            'redirect_uri',
-            'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/'
-          );
-          formData.append('code_verifier', CODE_VERIFIER);
-
-          postData(API_TOKEN_ENDPOINT, formData, '', true).then((res) => {
-            if (res.status === 200) {
-              res.json().then((data) => {
-                console.log('tokendata: ', data);
-                add(data.access_token);
-                ACCESS_TOKEN = data.access_token;
-                /*                 user_signed_in = true;
-                 */ return { content: 'user_signed_in ' };
-              });
-            }
-          });
-        } else {
-          return { content: '789' };
-        }
+        return { content: state };
       }
     }
   } else {
@@ -90,35 +54,52 @@ const init = (redirect_url: any, steaet1: string): MessageResponse => {
   return { content: '' };
 };
 
-const create_pkce_endpoint = () => {
-  STATE = encodeURIComponent(
-    'meet' + Math.random().toString(36).substring(2, 15)
-  );
-
-  const data = {
-    client_id: CLIENT_ID,
-    response_type: RESPONSE_TYPE,
-    redirect_uri: 'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/',
-    state: STATE,
-    scope: PLAYLIST_PUBLIC_SCOPE,
-    show_dialog: SHOW_DIALOG,
-    code_challenge_method: CODE_CHALLENGE_METHOD,
-    code_challenge: CODE_CHALLENGE,
+const getToken = () => {
+  const tokenData: TokenRequestParams = {
+    client_id: authData.client_id,
+    grant_type: GRANT_TYPE,
+    code: authData.code,
+    redirect_uri: REDIRECT_URI,
+    code_verifier: authData.codeVerifier,
   };
 
-  const searchParams = new URLSearchParams(data);
+  const formData = buildParams(tokenData);
+  console.log(formData.toString());
 
-  const url = `https://accounts.spotify.com/authorize?`.concat(
-    searchParams.toString()
-  );
+  postData(API_TOKEN_ENDPOINT, formData, true).then((res) => {
+    if (res.status === 200) {
+      res.json().then((data) => {
+        return { content: data.access_token };
+      });
+    } else {
+      res.json().then((data) => {
+        console.log(data);
+      });
+    }
+  });
+};
+const getPkceAuthUrl = (): string => {
+  const data: AuthRequestParams = {
+    client_id: authData.client_id,
+    response_type: RESPONSE_TYPE,
+    redirect_uri: REDIRECT_URI,
+    state: authData.state,
+    scope: [PLAYLIST_PUBLIC_SCOPE, PLAYLIST_PRIVATE_SCOPE],
+    show_dialog: SHOW_DIALOG,
+    code_challenge_method: authData.codeChallengeMethod,
+    code_challenge: authData.codeChallenge,
+  };
+
+  const searchParams = buildParams(data);
+
+  const url = AUTH_URL.concat(searchParams.toString());
 
   console.log(url);
 
   return url;
 };
 
-const getToken = () => {};
 const getSong = () => {}; //if no token, get token
 const addToPlaylist = () => {};
 
-export { getToken, getSong, addToPlaylist, init };
+export { getToken, getSong, addToPlaylist, init, getPkceAuthUrl as getPkceUrl };
