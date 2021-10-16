@@ -24,6 +24,6 @@
       "run_at": "document_end"
     }
   ],
-  "permissions": ["activeTab", "identity"],
+  "permissions": ["activeTab", "identity", "storage"],
   "optional_permissions": ["<all_urls>"]
 }
