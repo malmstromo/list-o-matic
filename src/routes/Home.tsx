@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { ChromeMessage, Sender } from '../types';
 import { getCurrentTabUId, getCurrentTabUrl } from '../chrome/utils';
+import { ActionType } from '../types';
+import { useAppSelector, useAppDispatch } from '../redux/hooks';
 
 export const Home = () => {
   const [url, setUrl] = useState<string>('');
@@ -34,10 +36,10 @@ export const Home = () => {
     console.log("send messate'1'11");
     const message: ChromeMessage = {
       from: Sender.React,
-      message: 'login',
+      message: ActionType.LOGIN,
       data: '',
     };
-    chrome.runtime.sendMessage({ message: 'login' }, function (response) {
+    chrome.runtime.sendMessage(message, function (response) {
       console.log('response is: ', response.message);
       setSignedIn(response.message);
     });
@@ -85,6 +87,8 @@ export const Home = () => {
     setPlaylistName(e.target.value);
   };
 
+  const token = useAppSelector((state) => state.tokenReducer.value);
+
   return (
     <div className="App">
       <header className="App-header">
@@ -92,6 +96,7 @@ export const Home = () => {
         <p>URL:</p>
         <p>{url}</p>
         <p>{signedIn ? 'signed in!' : 'not signed in'}</p>
+        <p>{token}</p>
         <button onClick={sendTestMessage}>Log in</button>
         <button onClick={sendRemoveMessage}>Get song</button>
         <input value={playlistName} onChange={handleChange} type="text"></input>
