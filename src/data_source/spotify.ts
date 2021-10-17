@@ -29,14 +29,18 @@ interface AuthRequestParams extends RequestParams {
   code_challenge: string;
 }
 
-const init = (redirect_url: any): MessageResponse => {
+const handleRedirect = (redirect_url: any): MessageResponse => {
+  const response: MessageResponse = {
+    content: '',
+    success: false,
+  };
   if (redirect_url) {
     if (chrome.runtime.lastError) {
-      return { content: '123' };
+      return response;
     } else {
       //parse this in a better way
       if (redirect_url.includes('callback?error=access_denied')) {
-        return { content: '456' };
+        return response;
       } else {
         authData.code = redirect_url.substring(
           redirect_url.indexOf('code=') + 5,
@@ -45,13 +49,12 @@ const init = (redirect_url: any): MessageResponse => {
         const state = redirect_url.substring(
           redirect_url.indexOf('state=') + 6
         );
-        return { content: state };
+        return { ...response, content: state, success: true };
       }
     }
   } else {
-    console.log('Redirect failed!');
+    return response;
   }
-  return { content: '' };
 };
 
 const getToken = () => {
@@ -66,16 +69,19 @@ const getToken = () => {
   const formData = buildParams(tokenData);
   console.log(formData.toString());
 
-  postData(API_TOKEN_ENDPOINT, formData, true).then((res) => {
-    if (res.status === 200) {
-      res.json().then((data) => {
-        return { content: data.access_token };
-      });
-    } else {
-      res.json().then((data) => {
-        console.log(data);
-      });
-    }
+  return postData(API_TOKEN_ENDPOINT, formData, true).then((res) => {
+    const response: MessageResponse = {
+      content: '',
+      success: false,
+    };
+    return res.json().then((data) => {
+      console.log(data);
+      if (data.status === 200) {
+        return { ...data, success: true };
+      } else {
+        return { ...data, success: false };
+      }
+    });
   });
 };
 const getPkceAuthUrl = (): string => {
@@ -102,4 +108,10 @@ const getPkceAuthUrl = (): string => {
 const getSong = () => {}; //if no token, get token
 const addToPlaylist = () => {};
 
-export { getToken, getSong, addToPlaylist, init, getPkceAuthUrl as getPkceUrl };
+export {
+  getToken,
+  getSong,
+  addToPlaylist,
+  handleRedirect as init,
+  getPkceAuthUrl as getPkceUrl,
+};

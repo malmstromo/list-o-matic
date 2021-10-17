@@ -1,16 +1,18 @@
 export enum Sender {
   React,
-  Content,
+  Background,
 }
 
 export interface ChromeMessage {
   from: Sender;
-  message: any;
-  data: any;
+  data?: any;
+  message?: any;
+  success?: boolean;
 }
 
 export interface MessageResponse {
   content: any;
+  success: boolean;
 }
 
 export enum ActionType {

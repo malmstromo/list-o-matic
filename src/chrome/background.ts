@@ -1,12 +1,6 @@
 import { ChromeMessage, ActionType, Sender } from '../types';
 import { postData, getData } from '../apiUtils';
-import {
-  getSong,
-  addToPlaylist,
-  getToken,
-  getPkceUrl,
-  init,
-} from '../data_source/spotify';
+import { getToken, getPkceUrl, init } from '../data_source/spotify';
 import { challenge } from '../cryptoUtils';
 import { authData } from './auth';
 export {};
@@ -48,23 +42,20 @@ const messagesFromReactAppListener = (
           (redirect_url) => {
             const response = init(redirect_url);
 
-            console.log(response);
             if (response.content === authData.state) {
               user_signed_in = true;
-              const token = getToken();
-              console.log(token);
+              getToken().then((data) => {
+                console.log(data);
+                authData.token = data.content;
+              });
             }
-            sendResponse(response);
           }
         );
       });
     }
-
-    return true;
   } else if (request.message === ActionType.GET_LOGIN_STATE) {
-    sendResponse({ message: authData.token });
+    sendResponse(user_signed_in);
   } else if (request.message === ActionType.GET_SONG) {
-    console.log(authData.token);
     sendResponse({ message: authData.token });
   }
   /* try {
@@ -99,7 +90,7 @@ const messagesFromReactAppListener = (
     });
   } */
 
-  return 'foo';
+  return true;
 };
 
 /** Fired when the extension is first installed,

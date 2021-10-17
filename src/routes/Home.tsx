@@ -1,45 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { ChromeMessage, Sender } from '../types';
-import { getCurrentTabUId, getCurrentTabUrl } from '../chrome/utils';
+import {
+  getCurrentTabUId,
+  getCurrentTabUrl,
+  getSong,
+  getArtist,
+} from '../chrome/utils';
 import { ActionType } from '../types';
 
 export const Home = () => {
-  const [url, setUrl] = useState<string>('');
   const [playlistName, setPlaylistName] = useState<string>('testplaylist');
   const [responseFromContent, setResponseFromContent] = useState<string>('');
   const [signedIn, setSignedIn] = useState<boolean>(false);
   const [token, setToken] = useState<boolean>(false);
+  const [songInfo, setSongInfo] = useState({ song: '', artist: '' });
 
   const { push } = useHistory();
 
-  /**
-   * Get current URL
-   */
-  useEffect(() => {
-    getCurrentTabUrl((url) => {
-      setUrl(url || 'undefined');
-    });
-  }, []);
-
   useEffect(() => {
     chrome.runtime.sendMessage(
-      { message: 'getLoginState' },
+      { message: ActionType.GET_LOGIN_STATE },
       function (response) {
         console.log('Response from initial: ', response);
-        setSignedIn(response.message);
+        setSignedIn(response);
       }
     );
   }, []);
 
-  useEffect(() => {
-    chrome.storage.local.get(['token'], function (result) {
-      console.log('Value currently is ' + result.key);
-    });
-  }, [token]);
-
   const login = () => {
-    console.log("send messate'1'11");
     const message: ChromeMessage = {
       from: Sender.React,
       message: ActionType.LOGIN,
@@ -50,27 +39,25 @@ export const Home = () => {
       setToken(true);
       setSignedIn(response.message);
     });
-
-    // getCurrentTabUId((id) => {
-    //     id && chrome.tabs.sendMessage(
-    //         id,
-    //         message,
-    //         (responseFromContentScript) => {
-    //             setResponseFromContent(responseFromContentScript);
-    //         });
-    // });
   };
 
-  const getSong = () => {
-    console.log('sget song');
+  const getInfo = () => {
     const message: ChromeMessage = {
       from: Sender.React,
-      message: ActionType.GET_SONG,
+      message: 'report_back',
       data: '',
     };
 
-    chrome.runtime.sendMessage(message, function (response) {
-      console.log('response is: ', response);
+    getSong((result) => {
+      setSongInfo((prevState) => {
+        return { ...prevState, song: result[0] };
+      });
+    });
+
+    getArtist((result) => {
+      setSongInfo((prevState) => {
+        return { ...prevState, artist: result[0] };
+      });
     });
   };
 
@@ -89,12 +76,12 @@ export const Home = () => {
     <div className="App">
       <header className="App-header">
         <p>Home</p>
-        <p>URL:</p>
-        <p>{url}</p>
         <p>{signedIn ? 'signed in!' : 'not signed in'}</p>
         <p>{token}</p>
         <button onClick={login}>Log in</button>
-        <button onClick={getSong}>Get song</button>
+        <button onClick={getInfo}>Get song</button>
+        <p>{songInfo.artist}</p>
+        <p>{songInfo.song}</p>
         <input value={playlistName} onChange={handleChange} type="text"></input>
         <button onClick={getPlaylist}>Get playlist</button>
 
