@@ -1,6 +1,6 @@
 import { ChromeMessage, ActionType, Sender } from '../types';
 import { postData, getData } from '../apiUtils';
-import { getToken, getPkceUrl, init } from '../data_source/spotify';
+import { getToken, getPkceUrl, init, getSong } from '../data_source/spotify';
 import { challenge } from '../cryptoUtils';
 import { authData } from './auth';
 export {};
@@ -21,11 +21,7 @@ const messagesFromReactAppListener = (
   sender: chrome.runtime.MessageSender,
   sendResponse: MessageResponse
 ) => {
-  console.log('Got a message!');
-  console.log(request.message);
-
   if (request.message === ActionType.LOGIN) {
-    console.log('here');
     if (user_signed_in) {
       console.log('User is already signed in.');
     } else {
@@ -45,8 +41,7 @@ const messagesFromReactAppListener = (
             if (response.content === authData.state) {
               user_signed_in = true;
               getToken().then((data) => {
-                console.log(data);
-                authData.token = data.content;
+                authData.token = data.access_token;
               });
             }
           }
@@ -55,8 +50,14 @@ const messagesFromReactAppListener = (
     }
   } else if (request.message === ActionType.GET_LOGIN_STATE) {
     sendResponse(user_signed_in);
-  } else if (request.message === ActionType.GET_SONG) {
-    sendResponse({ message: authData.token });
+  } else if (request.message === ActionType.ADD_TO_PLAYLIST) {
+    if (!authData.token) {
+      console.log('authdata', authData);
+    }
+    const { song, artist } = request.data;
+    console.log(song);
+    console.log(artist);
+    getSong(request.data);
   }
   /* try {
       const foo = create_search();
@@ -91,6 +92,32 @@ const messagesFromReactAppListener = (
   } */
 
   return true;
+};
+
+const login = () => {
+  challenge().then((challenge) => {
+    authData.codeChallenge = challenge;
+    const authUrl = getPkceUrl();
+    console.log(authUrl);
+
+    chrome.identity.launchWebAuthFlow(
+      {
+        url: authUrl,
+        interactive: true,
+      },
+      (redirect_url) => {
+        const response = init(redirect_url);
+
+        if (response.content === authData.state) {
+          user_signed_in = true;
+          getToken().then((data) => {
+            console.log(data);
+            authData.token = data.content;
+          });
+        }
+      }
+    );
+  });
 };
 
 /** Fired when the extension is first installed,

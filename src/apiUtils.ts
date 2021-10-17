@@ -1,6 +1,4 @@
-export interface RequestParams {
-  client_id: string;
-}
+export interface RequestParams {}
 // Example POST method implementation:
 async function postData(
   url = '',

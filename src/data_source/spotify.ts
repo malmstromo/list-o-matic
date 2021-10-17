@@ -1,5 +1,5 @@
 import { MessageResponse } from '../types';
-import { postData, RequestParams, buildParams } from '../apiUtils';
+import { postData, RequestParams, buildParams, getData } from '../apiUtils';
 import { authData } from 'src/chrome/auth';
 
 const RESPONSE_TYPE = 'code';
@@ -9,17 +9,19 @@ const PLAYLIST_PRIVATE_SCOPE = 'playlist-modify-private';
 const PLAYLIST_PUBLIC_SCOPE = 'playlist-modify-public';
 const SHOW_DIALOG = 'true';
 const GRANT_TYPE = 'authorization_code';
-const BASE_ADDRESS = 'https://api.spotify.com/v1/search';
+const BASE_ADDRESS = 'https://api.spotify.com/v1/search?';
 const AUTH_URL = 'https://accounts.spotify.com/authorize?';
 const API_TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
 
 interface TokenRequestParams extends RequestParams {
+  client_id: string;
   grant_type: string;
   code: string;
   redirect_uri: string;
   code_verifier: string;
 }
 interface AuthRequestParams extends RequestParams {
+  client_id: string;
   redirect_uri: string;
   response_type: string;
   state: string;
@@ -27,6 +29,17 @@ interface AuthRequestParams extends RequestParams {
   show_dialog: string;
   code_challenge_method: string;
   code_challenge: string;
+}
+
+interface SearchParams extends RequestParams {
+  type: string;
+  q: string;
+  limit: number;
+}
+
+interface SongInfo {
+  artist: string;
+  song: string;
 }
 
 const handleRedirect = (redirect_url: any): MessageResponse => {
@@ -76,11 +89,7 @@ const getToken = () => {
     };
     return res.json().then((data) => {
       console.log(data);
-      if (data.status === 200) {
-        return { ...data, success: true };
-      } else {
-        return { ...data, success: false };
-      }
+      return data;
     });
   });
 };
@@ -104,8 +113,26 @@ const getPkceAuthUrl = (): string => {
 
   return url;
 };
+//https://developer.spotify.com/documentation/web-api/reference/#category-search
+const getSong = ({ song, artist }: SongInfo) => {
+  const query = `track:${song} artist:${artist}}`;
+  const data: SearchParams = {
+    type: 'track',
+    limit: 1,
+    q: query,
+  };
+  const searchParams = buildParams(data);
 
-const getSong = () => {}; //if no token, get token
+  const url = BASE_ADDRESS.concat(searchParams.toString());
+  getData(url, authData.token).then((res) => {
+    res.json().then((data) => {
+      console.log(data);
+    });
+  });
+  console.log('int psotify.ts, ', authData.token);
+  //if found song -> add it, if not, display error message in place (create a toast)
+};
+
 const addToPlaylist = () => {};
 
 export {

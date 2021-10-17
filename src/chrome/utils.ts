@@ -29,7 +29,7 @@ export const getArtist = (callback: (result: any) => void): void => {
       chrome.tabs.executeScript(
         id,
         {
-          code: 'document.getElementsByClassName("now-info-title")[0].innerHTML',
+          code: 'document.getElementsByClassName("now-info-subtitle")[0].innerHTML',
         },
         callback
       );
@@ -46,7 +46,7 @@ export const getSong = (callback: (result: any) => void): void => {
       chrome.tabs.executeScript(
         id,
         {
-          code: 'document.getElementsByClassName("now-info-subtitle")[0].innerHTML',
+          code: 'document.getElementsByClassName("now-info-title")[0].innerHTML',
         },
         callback
       );

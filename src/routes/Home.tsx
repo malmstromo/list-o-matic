@@ -62,9 +62,12 @@ export const Home = () => {
   };
 
   const getPlaylist = () => {
-    chrome.storage.local.get(['token'], function (result) {
-      console.log('Value currently is ' + result.key);
-    });
+    const message: ChromeMessage = {
+      from: Sender.React,
+      message: ActionType.ADD_TO_PLAYLIST,
+      data: songInfo,
+    };
+    chrome.runtime.sendMessage(message, function (response) {});
   };
 
   const handleChange = (e: any) => {
