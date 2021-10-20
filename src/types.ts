@@ -3,6 +3,7 @@ export enum Sender {
   Background,
 }
 
+//dialog between ui and background
 export interface ChromeMessage {
   from: Sender;
   data?: any;
@@ -20,4 +21,9 @@ export enum ActionType {
   GET_SONG,
   ADD_TO_PLAYLIST,
   GET_LOGIN_STATE,
+}
+
+export interface FooMessage {
+  content: any;
+  success: boolean;
 }

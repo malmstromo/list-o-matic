@@ -1,10 +1,11 @@
 import { MessageResponse } from '../types';
 import { postData, RequestParams, buildParams, getData } from '../apiUtils';
 import { authData } from 'src/chrome/auth';
+import { resourceLimits } from 'worker_threads';
 
 const RESPONSE_TYPE = 'code';
 const REDIRECT_URI =
-  'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/';
+  'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/index.html';
 const PLAYLIST_PRIVATE_SCOPE = 'playlist-modify-private';
 const PLAYLIST_PUBLIC_SCOPE = 'playlist-modify-public';
 const SHOW_DIALOG = 'true';
@@ -12,6 +13,7 @@ const GRANT_TYPE = 'authorization_code';
 const BASE_ADDRESS = 'https://api.spotify.com/v1/search?';
 const AUTH_URL = 'https://accounts.spotify.com/authorize?';
 const API_TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
+const PLAYLIST_ID = '3uIkiC71ZXa74mnbmDeCNR';
 
 interface TokenRequestParams extends RequestParams {
   client_id: string;
@@ -37,7 +39,7 @@ interface SearchParams extends RequestParams {
   limit: number;
 }
 
-interface SongInfo {
+interface TrackInfo {
   artist: string;
   song: string;
 }
@@ -113,8 +115,14 @@ const getPkceAuthUrl = (): string => {
 
   return url;
 };
+
+/**
+ *
+ * @param TrackInfo - song name and artist name
+ * @returns spotify track uri
+ */
 //https://developer.spotify.com/documentation/web-api/reference/#category-search
-const getSong = ({ song, artist }: SongInfo) => {
+const getSong = ({ song, artist }: TrackInfo) => {
   const query = `track:${song} artist:${artist}}`;
   const data: SearchParams = {
     type: 'track',
@@ -124,21 +132,38 @@ const getSong = ({ song, artist }: SongInfo) => {
   const searchParams = buildParams(data);
 
   const url = BASE_ADDRESS.concat(searchParams.toString());
-  getData(url, authData.token).then((res) => {
-    res.json().then((data) => {
-      console.log(data);
+  return getData(url, authData.token).then((res) => {
+    return res.json().then((data) => {
+      console.log(data.tracks.items[0]);
+      return addToPlaylist(data.tracks.items[0].uri);
     });
   });
   console.log('int psotify.ts, ', authData.token);
   //if found song -> add it, if not, display error message in place (create a toast)
 };
 
-const addToPlaylist = () => {};
+//https://developer.spotify.com/documentation/web-api/reference/#/operations/add-tracks-to-playlist
+const addToPlaylist = (uri: string) => {
+  const url = `https://api.spotify.com/v1/playlists/${PLAYLIST_ID}/tracks`;
+  const data = {
+    uris: [uri],
+  };
+  return postData(
+    url,
+    JSON.stringify(data),
+    false,
+    `Bearer ${authData.token}`
+  ).then((res) => {
+    return res.json().then((res) => {
+      return { message: 'success!' };
+    });
+  });
+};
 
 export {
   getToken,
   getSong,
   addToPlaylist,
-  handleRedirect as init,
+  handleRedirect,
   getPkceAuthUrl as getPkceUrl,
 };

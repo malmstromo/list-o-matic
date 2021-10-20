@@ -1,6 +1,11 @@
 import { ChromeMessage, ActionType, Sender } from '../types';
 import { postData, getData } from '../apiUtils';
-import { getToken, getPkceUrl, init, getSong } from '../data_source/spotify';
+import {
+  getToken,
+  getPkceUrl,
+  handleRedirect,
+  getSong,
+} from '../data_source/spotify';
 import { challenge } from '../cryptoUtils';
 import { authData } from './auth';
 export {};
@@ -21,6 +26,7 @@ const messagesFromReactAppListener = (
   sender: chrome.runtime.MessageSender,
   sendResponse: MessageResponse
 ) => {
+  //https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/identity/launchWebAuthFlow/
   if (request.message === ActionType.LOGIN) {
     if (user_signed_in) {
       console.log('User is already signed in.');
@@ -36,7 +42,7 @@ const messagesFromReactAppListener = (
             interactive: true,
           },
           (redirect_url) => {
-            const response = init(redirect_url);
+            const response = handleRedirect(redirect_url);
 
             if (response.content === authData.state) {
               user_signed_in = true;
@@ -57,44 +63,15 @@ const messagesFromReactAppListener = (
     const { song, artist } = request.data;
     console.log(song);
     console.log(artist);
-    getSong(request.data);
-  }
-  /* try {
-      const foo = create_search();
-      console.log(foo);
-      console.log(ACCESS_TOKEN);
-      const credentials = ACCESS_TOKEN;
-      console.log(credentials);
-      getData(foo, credentials).then((res) => {
-        if (res.status === 200) {
-          res.json().then((data) => {
-            song = data.tracks.items[0].uri;
-            console.log(song);
-            console.log(data);
-          });
-        } else {
-          console.log(res);
-        }
-      });
-    } catch (e) {
-      sendResponse({ message: e });
-    }
-  } else if (request.message === 'getPlaylist') {
-    getData(create_search(), `Bearer ${ACCESS_TOKEN}`).then((res) => {
-      if (res.status === 200) {
-        res.json().then((data) => {
-          song = data.tracks.items[0].uri;
-          console.log(song);
-          console.log(data);
-        });
-      }
+    getSong(request.data).then((res) => {
+      console.log(res.message);
     });
-  } */
+  }
 
   return true;
 };
 
-const login = () => {
+const handleLogin = () => {
   challenge().then((challenge) => {
     authData.codeChallenge = challenge;
     const authUrl = getPkceUrl();
@@ -106,13 +83,12 @@ const login = () => {
         interactive: true,
       },
       (redirect_url) => {
-        const response = init(redirect_url);
+        const response = handleRedirect(redirect_url);
 
         if (response.content === authData.state) {
           user_signed_in = true;
           getToken().then((data) => {
-            console.log(data);
-            authData.token = data.content;
+            authData.token = data.access_token;
           });
         }
       }
