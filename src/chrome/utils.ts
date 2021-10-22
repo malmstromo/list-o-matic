@@ -25,7 +25,6 @@ export const getArtist = (callback: (result: any) => void): void => {
 
   getCurrentTabUId((id) => {
     if (id) {
-      console.log('has id ', id);
       chrome.tabs.executeScript(
         id,
         {
@@ -42,7 +41,6 @@ export const getSong = (callback: (result: any) => void): void => {
 
   getCurrentTabUId((id) => {
     if (id) {
-      console.log('has id ', id);
       chrome.tabs.executeScript(
         id,
         {

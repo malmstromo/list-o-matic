@@ -8,13 +8,17 @@ import {
   getArtist,
 } from '../chrome/utils';
 import { ActionType } from '../types';
+import { LoginButton } from '../components/Login';
+import { GetTrackInfoButton } from '../components/GetTrackInfoButton';
+import { AddToPlaylist } from '../components/AddToPlaylist';
+import { Error } from '../components/Error';
+import { Container, Row, Col } from 'react-bootstrap';
 
 export const Home = () => {
-  const [playlistName, setPlaylistName] = useState<string>('testplaylist');
-  const [responseFromContent, setResponseFromContent] = useState<string>('');
   const [signedIn, setSignedIn] = useState<boolean>(false);
-  const [token, setToken] = useState<boolean>(false);
   const [songInfo, setSongInfo] = useState({ song: '', artist: '' });
+  const [songAdded, setSongAdded] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const { push } = useHistory();
 
@@ -36,18 +40,11 @@ export const Home = () => {
     };
     chrome.runtime.sendMessage(message, function (response) {
       console.log('response is: ', response.message);
-      setToken(true);
       setSignedIn(response.message);
     });
   };
 
   const getInfo = () => {
-    const message: ChromeMessage = {
-      from: Sender.React,
-      message: 'report_back',
-      data: '',
-    };
-
     getSong((result) => {
       setSongInfo((prevState) => {
         return { ...prevState, song: result[0] };
@@ -59,45 +56,38 @@ export const Home = () => {
         return { ...prevState, artist: result[0] };
       });
     });
+
+    setSongAdded(false);
   };
 
-  const getPlaylist = () => {
+  const addToPlaylist = () => {
     const message: ChromeMessage = {
       from: Sender.React,
       message: ActionType.ADD_TO_PLAYLIST,
       data: songInfo,
     };
-    chrome.runtime.sendMessage(message, function (response) {});
+    chrome.runtime.sendMessage(message, function (response) {
+      if (response.success) {
+        setSongAdded(response.success);
+      } else {
+        setErrorMessage(response.content);
+      }
+    });
   };
 
-  const handleChange = (e: any) => {
-    console.log(e);
-    setPlaylistName(e.target.value);
+  const closeAndResetError = () => {
+    setErrorMessage('');
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <p>Home</p>
-        <p>{signedIn ? 'signed in!' : 'not signed in'}</p>
-        <p>{token}</p>
-        <button onClick={login}>Log in</button>
-        <button onClick={getInfo}>Get song</button>
-        <p>{songInfo.artist}</p>
-        <p>{songInfo.song}</p>
-        <input value={playlistName} onChange={handleChange} type="text"></input>
-        <button onClick={getPlaylist}>Get playlist</button>
-
-        <p>Response from content:</p>
-        <p>{responseFromContent}</p>
-        <button
-          onClick={() => {
-            push('/about');
-          }}
-        >
-          About page
-        </button>
-      </header>
-    </div>
+    <Container>
+      <h2>Home</h2>
+      <div className="d-grid gap-2">
+        <LoginButton signedIn={signedIn} onClick={login} />
+        <GetTrackInfoButton trackInfo={songInfo} onClick={getInfo} />
+        <AddToPlaylist onClick={addToPlaylist} songAdded={songAdded} />
+        <Error message={errorMessage} onClick={closeAndResetError} />
+      </div>
+    </Container>
   );
 };

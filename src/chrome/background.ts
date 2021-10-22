@@ -1,5 +1,4 @@
 import { ChromeMessage, ActionType, Sender } from '../types';
-import { postData, getData } from '../apiUtils';
 import {
   getToken,
   getPkceUrl,
@@ -32,51 +31,31 @@ const messagesFromReactAppListener = (
     if (user_signed_in) {
       console.log('User is already signed in.');
     } else {
-      challenge().then((challenge) => {
-        authData.codeChallenge = challenge;
-        const authUrl = getPkceUrl();
-        console.log(authUrl);
-
-        chrome.identity.launchWebAuthFlow(
-          {
-            url: authUrl,
-            interactive: true,
-          },
-          (redirect_url) => {
-            const response = handleRedirect(redirect_url);
-
-            if (response.content === authData.state) {
-              user_signed_in = true;
-              getToken().then((data) => {
-                authData.token = data.access_token;
-              });
-            }
-          }
-        );
-      });
+      handleLogin();
     }
   } else if (request.message === ActionType.GET_LOGIN_STATE) {
+    console.log('asks for login state');
     sendResponse(user_signed_in);
   } else if (request.message === ActionType.ADD_TO_PLAYLIST) {
-    if (!authData.token) {
-      console.log('authdata', authData);
-    }
-    const { song, artist } = request.data;
-    console.log(song);
-    console.log(artist);
-    getSong(request.data).then((res) => {
-      console.log(res.success);
-      if (!res.success) {
-        console.log(res.content);
+    try {
+      if (!authData.token) {
+        handleLogin();
       } else {
-        addToPlaylist(res.content).then((data) => {
-          console.log('success: ', data.success);
-          console.log('response', data.content);
+        getSong(request.data).then((res) => {
+          console.log(res.success);
+          if (!res.success) {
+            sendResponse({ success: false, content: 'Could not find song' });
+          } else {
+            addToPlaylist(res.content).then((data) => {
+              sendResponse({ success: data.success, content: data.content });
+            });
+          }
         });
       }
-    });
+    } catch (e) {
+      sendResponse({ success: false, content: e });
+    }
   }
-
   return true;
 };
 

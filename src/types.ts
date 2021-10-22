@@ -27,3 +27,8 @@ export interface FooMessage {
   content: any;
   success: boolean;
 }
+
+export interface TrackInfo {
+  song: string;
+  artist: string;
+}

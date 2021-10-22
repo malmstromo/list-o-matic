@@ -1,8 +1,6 @@
 import { MessageResponse } from '../types';
 import { postData, RequestParams, buildParams, getData } from '../apiUtils';
 import { authData } from 'src/chrome/auth';
-import { resourceLimits } from 'worker_threads';
-import { rejects } from 'assert';
 
 const RESPONSE_TYPE = 'code';
 const REDIRECT_URI = process.env.REACT_APP_REDIRECT_URI || '';
@@ -95,6 +93,7 @@ const getToken = () => {
     });
   });
 };
+
 const getPkceAuthUrl = (): string => {
   const data: AuthRequestParams = {
     client_id: authData.client_id,
@@ -136,7 +135,6 @@ const getSong = ({ song, artist }: TrackInfo) => {
     return res.json().then((data) => {
       console.log(res.status);
       if (res.status === 200) {
-        console.log('successful');
         return { content: data.tracks.items[0].uri, success: true };
       }
       return { success: false, content: data };
@@ -160,7 +158,7 @@ const addToPlaylist = (uri: string) => {
     return res.json().then(() => {
       console.log(res.status);
       if (res.status === 201) {
-        return { success: true, content: 'footastic!' };
+        return { success: true, content: 'Song added!' };
       }
       return { content: res, success: false };
     });
