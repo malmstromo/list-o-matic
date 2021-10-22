@@ -2,10 +2,10 @@ import { MessageResponse } from '../types';
 import { postData, RequestParams, buildParams, getData } from '../apiUtils';
 import { authData } from 'src/chrome/auth';
 import { resourceLimits } from 'worker_threads';
+import { rejects } from 'assert';
 
 const RESPONSE_TYPE = 'code';
-const REDIRECT_URI =
-  'https://coddndlacciekokgjfeeoiphmhgknhpj.chromiumapp.org/index.html';
+const REDIRECT_URI = process.env.REACT_APP_REDIRECT_URI || '';
 const PLAYLIST_PRIVATE_SCOPE = 'playlist-modify-private';
 const PLAYLIST_PUBLIC_SCOPE = 'playlist-modify-public';
 const SHOW_DIALOG = 'true';
@@ -13,7 +13,7 @@ const GRANT_TYPE = 'authorization_code';
 const BASE_ADDRESS = 'https://api.spotify.com/v1/search?';
 const AUTH_URL = 'https://accounts.spotify.com/authorize?';
 const API_TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
-const PLAYLIST_ID = '3uIkiC71ZXa74mnbmDeCNR';
+const PLAYLIST_ID = process.env.REACT_APP_PLAYLIST_ID;
 
 interface TokenRequestParams extends RequestParams {
   client_id: string;
@@ -134,11 +134,14 @@ const getSong = ({ song, artist }: TrackInfo) => {
   const url = BASE_ADDRESS.concat(searchParams.toString());
   return getData(url, authData.token).then((res) => {
     return res.json().then((data) => {
-      console.log(data.tracks.items[0]);
-      return addToPlaylist(data.tracks.items[0].uri);
+      console.log(res.status);
+      if (res.status === 200) {
+        console.log('successful');
+        return { content: data.tracks.items[0].uri, success: true };
+      }
+      return { success: false, content: data };
     });
   });
-  console.log('int psotify.ts, ', authData.token);
   //if found song -> add it, if not, display error message in place (create a toast)
 };
 
@@ -154,8 +157,12 @@ const addToPlaylist = (uri: string) => {
     false,
     `Bearer ${authData.token}`
   ).then((res) => {
-    return res.json().then((res) => {
-      return { message: 'success!' };
+    return res.json().then(() => {
+      console.log(res.status);
+      if (res.status === 201) {
+        return { success: true, content: 'footastic!' };
+      }
+      return { content: res, success: false };
     });
   });
 };

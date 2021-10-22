@@ -5,6 +5,7 @@ import {
   getPkceUrl,
   handleRedirect,
   getSong,
+  addToPlaylist,
 } from '../data_source/spotify';
 import { challenge } from '../cryptoUtils';
 import { authData } from './auth';
@@ -64,7 +65,15 @@ const messagesFromReactAppListener = (
     console.log(song);
     console.log(artist);
     getSong(request.data).then((res) => {
-      console.log(res.message);
+      console.log(res.success);
+      if (!res.success) {
+        console.log(res.content);
+      } else {
+        addToPlaylist(res.content).then((data) => {
+          console.log('success: ', data.success);
+          console.log('response', data.content);
+        });
+      }
     });
   }
 
