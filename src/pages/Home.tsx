@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { ChromeMessage, Sender } from '../types';
-import {
-  getCurrentTabUId,
-  getCurrentTabUrl,
-  getSong,
-  getArtist,
-} from '../chrome/utils';
+import { getSong, getArtist } from '../chrome/utils';
 import { ActionType } from '../types';
 import { LoginButton } from '../components/Login';
 import { GetTrackInfoButton } from '../components/GetTrackInfoButton';
 import { AddToPlaylist } from '../components/AddToPlaylist';
 import { Error } from '../components/Error';
-import { Container, Row, Col } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
+import {
+  getLoginState,
+  getLogin,
+  addToPlaylist,
+} from '../chrome/content_actions';
 
 export const Home = () => {
   const [signedIn, setSignedIn] = useState<boolean>(false);
@@ -23,28 +23,18 @@ export const Home = () => {
   const { push } = useHistory();
 
   useEffect(() => {
-    chrome.runtime.sendMessage(
-      { message: ActionType.GET_LOGIN_STATE },
-      function (response) {
-        console.log('Response from initial: ', response);
-        setSignedIn(response);
-      }
-    );
+    getLoginState((response) => {
+      setSignedIn(response);
+    });
   }, []);
 
-  const login = () => {
-    const message: ChromeMessage = {
-      from: Sender.React,
-      message: ActionType.LOGIN,
-      data: '',
-    };
-    chrome.runtime.sendMessage(message, function (response) {
-      console.log('response is: ', response.message);
+  const onLogin = () => {
+    getLogin((response) => {
       setSignedIn(response.message);
     });
   };
 
-  const getInfo = () => {
+  const onGetInfo = () => {
     getSong((result) => {
       setSongInfo((prevState) => {
         return { ...prevState, song: result[0] };
@@ -60,13 +50,8 @@ export const Home = () => {
     setSongAdded(false);
   };
 
-  const addToPlaylist = () => {
-    const message: ChromeMessage = {
-      from: Sender.React,
-      message: ActionType.ADD_TO_PLAYLIST,
-      data: songInfo,
-    };
-    chrome.runtime.sendMessage(message, function (response) {
+  const onAddToPlaylist = () => {
+    addToPlaylist(songInfo, (response) => {
       if (response.success) {
         setSongAdded(response.success);
       } else {
@@ -83,9 +68,9 @@ export const Home = () => {
     <Container>
       <h2>Home</h2>
       <div className="d-grid gap-2">
-        <LoginButton signedIn={signedIn} onClick={login} />
-        <GetTrackInfoButton trackInfo={songInfo} onClick={getInfo} />
-        <AddToPlaylist onClick={addToPlaylist} songAdded={songAdded} />
+        <LoginButton signedIn={signedIn} onClick={onLogin} />
+        <GetTrackInfoButton trackInfo={songInfo} onClick={onGetInfo} />
+        <AddToPlaylist onClick={onAddToPlaylist} songAdded={songAdded} />
         <Error message={errorMessage} onClick={closeAndResetError} />
       </div>
     </Container>
