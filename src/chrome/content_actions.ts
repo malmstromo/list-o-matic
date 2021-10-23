@@ -1,5 +1,4 @@
-import { AnyMxRecord, AnyNaptrRecord } from 'dns';
-import { ActionType, ChromeMessage, Sender } from '../types';
+import { ActionType, ChromeMessage, Sender, TrackInfo } from '../types';
 
 export const getLoginState = (callback: (result: any) => void): void => {
   chrome.runtime.sendMessage(
@@ -17,13 +16,12 @@ export const getLogin = (callback: (result: any) => void): void => {
     data: '',
   };
   chrome.runtime.sendMessage(message, (response) => {
-    console.log('response is: ', response.message);
     callback(response);
   });
 };
 
 export const addToPlaylist = (
-  data: any,
+  data: TrackInfo,
   callback: (result: any) => void
 ): void => {
   const message: ChromeMessage = {

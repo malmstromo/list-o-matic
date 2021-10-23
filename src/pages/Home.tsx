@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
-import { ChromeMessage, Sender } from '../types';
 import { getSong, getArtist } from '../chrome/utils';
-import { ActionType } from '../types';
+import { TrackInfo } from '../types';
 import { LoginButton } from '../components/Login';
 import { GetTrackInfoButton } from '../components/GetTrackInfoButton';
 import { AddToPlaylist } from '../components/AddToPlaylist';
@@ -16,11 +14,9 @@ import {
 
 export const Home = () => {
   const [signedIn, setSignedIn] = useState<boolean>(false);
-  const [songInfo, setSongInfo] = useState({ song: '', artist: '' });
+  const [songInfo, setSongInfo] = useState<TrackInfo>({ song: '', artist: '' });
   const [songAdded, setSongAdded] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
-
-  const { push } = useHistory();
 
   useEffect(() => {
     getLoginState((response) => {
@@ -60,7 +56,7 @@ export const Home = () => {
     });
   };
 
-  const closeAndResetError = () => {
+  const resetError = () => {
     setErrorMessage('');
   };
 
@@ -71,7 +67,7 @@ export const Home = () => {
         <LoginButton signedIn={signedIn} onClick={onLogin} />
         <GetTrackInfoButton trackInfo={songInfo} onClick={onGetInfo} />
         <AddToPlaylist onClick={onAddToPlaylist} songAdded={songAdded} />
-        <Error message={errorMessage} onClick={closeAndResetError} />
+        <Error message={errorMessage} onClick={resetError} />
       </div>
     </Container>
   );
