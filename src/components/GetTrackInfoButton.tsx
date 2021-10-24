@@ -1,7 +1,5 @@
 import { Button } from 'react-bootstrap';
 import { Fragment } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { TrackInfo } from '../types';
 
 interface GetTrackInfoButtonProps {

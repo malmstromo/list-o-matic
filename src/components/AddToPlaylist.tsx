@@ -1,7 +1,7 @@
 import { Button } from 'react-bootstrap';
 import { Fragment } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
 interface AddToPlaylistProps {
   songAdded: boolean;
